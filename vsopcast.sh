@@ -56,20 +56,24 @@ function progress_bar {
     echo -ne "\n"
 }
 
-function isAlive {
-    kill -0 $1 &> /dev/null
+function spscAlive {
+    if [ $PROCNUM_ORIG == -1 ] ; then
+        echo "sp-sc was not started!"
+        exit 1
+    fi
+    kill -0 $PROCNUM_ORIG &> /dev/null
     return $?
 }
 
 function finish {
-    if ! isAlive $PROCNUM_ORIG ; then return; fi
+    if ! spscAlive ; then return; fi
 
     echo "terminating sp-sc($PROCNUM_ORIG).."
     kill $PROCNUM_ORIG
     sleep 1
-    if isAlive $PROCNUM_ORIG ; then
+    if spscAlive ; then
 	sleep $TIMEOUT_SIGTERM
-	if isAlive $PROCNUM_ORIG ; then
+	if spscAlive ; then
             echo "no response, killing $PROCNUM_ORIG.."
             kill -9 $PROCNUM_ORIG
 	fi
@@ -83,7 +87,7 @@ function vlcloop {
 	$(vlc_bin) http://localhost:$PLAYPORT/tv.asf &> /dev/null
 	echo -n "vlc closed. sp-sc is "
 
-	if isAlive $PROCNUM_ORIG ; then echo "alive" ; else echo "dead" ; fi
+	if spscAlive ; then echo "alive" ; else echo "dead" ; fi
 
 	while true; do
 	    read -p "[f]inish (end sp-sc) / [r]estart (vlc) / [e]xit (script) ? " ans
@@ -99,7 +103,7 @@ function vlcloop {
 		    break;;
 		[Ee]* )
 		    echo -n "exiting.. "
-		    if isAlive ; then echo "(sp-sc is still alive!)" ; else echo "" ; fi
+		    if spscAlive ; then echo "(sp-sc is still alive!)" ; else echo "" ; fi
 		    shallContinue=0
 		    break;;
 		* ) echo "Please answer f/r/e ..";;
@@ -120,7 +124,7 @@ function start_spsc {
     echo "connecting to $SERVER:3912/$CHANNEL.. "
     progress_bar 10
 
-    if kill -0 $PROCNUM_ORIG &> /dev/null ; then
+    if spscAlive ; then
 	echo "connected. starting the player.."
     else
 	echo "could not connect. exiting."
