@@ -15,6 +15,7 @@ PLAYPORT=-1
 PLAYPORT_DEFAULT=8908
 SERVER="broker.sopcast.com"
 PROCNUM_ORIG=-1
+REMOTE=0
 
 TIMEOUT_SIGTERM=20 # sec
 
@@ -27,7 +28,11 @@ function vlc_bin {
     if uname | grep Darwin > /dev/null ; then
 	echo "/Applications/VLC.app/Contents/MacOS/VLC"
     else
-	echo "vlc"
+        if [ $REMOTE -eq 0 ] ; then
+            echo "vlc"
+        else
+            echo "rvlc --x11-display :0 -f"
+        fi
     fi
 }
 
@@ -84,7 +89,7 @@ function vlcloop {
     shallContinue=1
 
     while [ $shallContinue -eq 1 ] ; do
-	$(vlc_bin) http://localhost:$PLAYPORT/tv.asf &> /dev/null
+	$(vlc_bin) -q http://localhost:$PLAYPORT/tv.asf
 	echo -n "vlc closed. sp-sc is "
 
 	if spscAlive ; then echo "alive" ; else echo "dead" ; fi
@@ -143,7 +148,7 @@ if [ $# -lt 1 ] ; then
 fi
 
 nopts=1
-while getopts "h?l:p:s:" opt; do
+while getopts "h?l:p:s:r" opt; do
     case "$opt" in
 	h|/?)
 	    usage
@@ -161,6 +166,10 @@ while getopts "h?l:p:s:" opt; do
 	    SERVER=$OPTARG
 	    nopts=$(($nopts+2))
 	    ;;
+        r)
+            REMOTE=1
+            nopts=$(($nopts+1))
+            ;;
     esac
 done
 
